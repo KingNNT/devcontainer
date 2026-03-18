@@ -1,0 +1,9 @@
+.git
+.gitignore
+.env
+.claude
+docs
+CLAUDE.md
+README.md
+Makefile
+docker-compose*.yml
