@@ -13,7 +13,6 @@ An isolated development environment powered by Docker with Neovim, Node.js 24 LT
 ## Prerequisites
 
 - [Docker](https://docs.docker.com/get-docker/)
-- [Docker Compose](https://docs.docker.com/compose/install/) (v2+)
 
 ## Quick Start
 
@@ -23,67 +22,49 @@ git clone <repo-url> devcontainer
 cd devcontainer
 
 # 2. Build the image
-make dev_build
+make build
 
-# 3. Create docker-compose.local.yml to mount your project
-cat > docker-compose.local.yml <<EOF
-services:
-  ubuntu:
-    volumes:
-      - /path/to/your/project:/workspace
-EOF
+# 3. Run the container (mounts current directory to /app)
+make run
 
-# 4. Start the container
-make dev_up
-
-# 5. Connect and start coding
-make dev_ubuntu_connect
-cd /workspace
+# 4. Connect and start coding
+make exec
+cd /app
 ```
 
-## How It Works
+## Usage
 
-This repo builds a Docker image with all dev tools pre-installed. You mount your project directory into the container via `docker-compose.local.yml`, then connect and code inside it using Neovim.
+The image is meant to be run from any project directory. Mount your project to `/app`:
+
+```bash
+docker run -d --name devcontainer -v /path/to/project:/app devcontainer
+docker exec -it devcontainer bash
+```
+
+Files are shared — edits inside the container are reflected on your host and vice versa.
 
 ```
 Your machine                    Container
 +-----------------------+       +---------------------------+
-| ~/projects/my-app/ ---+-----> | /workspace/               |
+| ~/projects/my-app/ ---+-----> | /app/                     |
 +-----------------------+  vol  | neovim, node 24, python   |
                           mount | 3.12, git, fzf, ...       |
                                 +---------------------------+
 ```
 
-Files are shared — edits inside the container are reflected on your host and vice versa.
-
 ## Commands
 
 | Command | Description |
 |---------|-------------|
-| `make dev_build` | Build the Docker image |
-| `make dev_up` | Start the container |
-| `make dev_down` | Stop the container |
-| `make dev_ubuntu_connect` | Open a shell in the container |
-
-## Local Overrides
-
-The `docker-compose.local.yml` file is gitignored. Use it to add personal volume mounts (SSH keys, dotfiles, project dirs):
-
-```yaml
-services:
-  ubuntu:
-    volumes:
-      - .:/workspace
-      - ~/.ssh:/root/.ssh:ro
-      - ~/.gitconfig:/root/.gitconfig:ro
-```
+| `make build` | Build the Docker image |
+| `make run` | Start the container (mounts `.` to `/app`) |
+| `make exec` | Open a shell in the container |
+| `make stop` | Stop and remove the container |
 
 ## Project Structure
 
 ```
-docker-compose.yml              # Base service definition
-docker-compose.override.yml     # Dev defaults (auto-loaded)
-docker-compose.local.yml        # Personal overrides (gitignored)
 .docker/ubuntu/Dockerfile       # Container image definition
 .docker/ubuntu/start-container  # Entrypoint script
+Makefile                        # All dev commands
 ```

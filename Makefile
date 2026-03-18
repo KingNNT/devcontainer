@@ -1,16 +1,14 @@
-COMPOSE_FILES := -f docker-compose.yml -f docker-compose.override.yml
-ifneq (,$(wildcard docker-compose.local.yml))
-COMPOSE_FILES += -f docker-compose.local.yml
-endif
+IMAGE_NAME := devcontainer
+CONTAINER_NAME := devcontainer
 
-dev_up:
-	docker compose $(COMPOSE_FILES) up -d
+build:
+	docker build -t $(IMAGE_NAME) .docker/ubuntu
 
-dev_down:
-	docker compose $(COMPOSE_FILES) down
+run:
+	docker run -d --name $(CONTAINER_NAME) --restart unless-stopped -v .:/app $(IMAGE_NAME)
 
-dev_build:
-	docker compose $(COMPOSE_FILES) build
+exec:
+	docker exec -it $(CONTAINER_NAME) bash
 
-dev_ubuntu_connect:
-	docker compose $(COMPOSE_FILES) exec ubuntu bash
+stop:
+	docker stop $(CONTAINER_NAME) && docker rm $(CONTAINER_NAME)

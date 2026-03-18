@@ -1,44 +1,83 @@
-ARG NODE_VERSION=24
-
 FROM ubuntu:22.04
 
-LABEL maintainer KingNNT
+LABEL maintainer="KingNNT"
 
-RUN apt update && apt install -y \
+ARG NODE_VERSION=24
+ARG USERNAME=dev
+ARG USER_UID=1000
+ARG USER_GID=1000
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# System packages: locales, build tools, Python 3.12
+RUN apt-get update && apt-get install -y --no-install-recommends \
   locales \
-  && localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8
-ENV LANG en_US.utf8
-
-RUN apt install -y \
   build-essential \
   git \
   curl \
   wget \
   make \
   fzf \
-  software-properties-common
-
-# Neovim (latest)
-RUN curl -LO https://github.com/neovim/neovim/releases/latest/download/nvim.appimage \
-  && chmod u+x nvim.appimage \
-  && ./nvim.appimage --appimage-extract \
-  && ln -s /squashfs-root/AppRun /usr/bin/nvim \
-  && rm nvim.appimage
-
-# Node.js via nvm
-RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
-
-# Python 3.12 via deadsnakes PPA
-RUN add-apt-repository -y ppa:deadsnakes/ppa \
-  && apt update \
-  && apt install -y python3.12 python3.12-venv python3.12-dev \
+  gpg \
+  gpg-agent \
+  software-properties-common \
+  unzip \
+  libreadline-dev \
+  sudo \
+  && localedef -i en_US -c -f UTF-8 -A /usr/share/locale/locale.alias en_US.UTF-8 \
+  && add-apt-repository -y ppa:deadsnakes/ppa \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends python3.12 python3.12-venv python3.12-dev \
   && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 1 \
-  && update-alternatives --install /usr/bin/python python /usr/bin/python3.12 1
+  && update-alternatives --install /usr/bin/python python /usr/bin/python3.12 1 \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
+
+ENV LANG=en_US.utf8
+ENV TERM=xterm-256color
+
+# Create non-root user
+RUN groupadd --gid "$USER_GID" "$USERNAME" \
+  && useradd --uid "$USER_UID" --gid "$USER_GID" -m -s /bin/bash "$USERNAME" \
+  && echo "$USERNAME ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers.d/"$USERNAME"
+
+# Neovim (latest release tarball, arch-aware)
+ARG TARGETARCH
+RUN NVIM_ARCH=$([ "$TARGETARCH" = "arm64" ] && echo "nvim-linux-arm64" || echo "nvim-linux-x86_64") \
+  && curl -fL "https://github.com/neovim/neovim/releases/latest/download/${NVIM_ARCH}.tar.gz" \
+  | tar -xz -C /opt \
+  && ln -s "/opt/${NVIM_ARCH}/bin/nvim" /usr/bin/nvim
+
+# Switch to non-root user
+USER $USERNAME
+ENV HOME=/home/$USERNAME
+
+# Node.js via nvm (installed at build time)
+ENV NVM_DIR=$HOME/.nvm
+RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash \
+  && . "$NVM_DIR/nvm.sh" \
+  && nvm install "$NODE_VERSION" \
+  && nvm alias default "$NODE_VERSION"
+
+# Claude Code (CLI)
+RUN curl -fsSL https://claude.ai/install.sh | bash
+
+# Claude Code: YOLO mode settings
+RUN mkdir -p "$HOME/.claude" \
+  && echo '{"permissions":{"allow":[],"deny":[],"additionalDirectories":[]},"enableAllProjectMcpServers":true,"dangerouslySkipPermissions":true}' > "$HOME/.claude/settings.json"
+
+# Shell alias: cc = claude code in YOLO mode
+RUN echo 'alias cc="claude --dangerously-skip-permissions"' >> "$HOME/.bashrc"
+
+WORKDIR /app
 
 # Neovim configuration
-RUN git clone -b develop https://github.com/KingNNT/neovim-configuration ~/.config/nvim
+RUN git clone -b develop https://github.com/KingNNT/neovim-configuration "$HOME/.config/nvim"
 
-COPY ./start-container /usr/local/bin/start-container
-RUN chmod +x /usr/local/bin/start-container
+# Enable OSC 52 clipboard for container environments
+RUN mkdir -p "$HOME/.config/nvim/after/plugin" \
+  && echo 'vim.g.clipboard = "osc52"' > "$HOME/.config/nvim/after/plugin/clipboard.lua"
+
+COPY --chmod=+x ./start-container /usr/local/bin/start-container
 
 ENTRYPOINT ["/usr/local/bin/start-container"]

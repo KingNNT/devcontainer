@@ -1,3 +1,0 @@
-services:
-  ubuntu:
-    restart: unless-stopped
