@@ -60,11 +60,11 @@ RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | b
   && nvm alias default "$NODE_VERSION"
 
 # Claude Code (CLI)
+ENV PATH=$HOME/.local/bin:$PATH
 RUN curl -fsSL https://claude.ai/install.sh | bash
 
-# Claude Code: YOLO mode settings
-RUN mkdir -p "$HOME/.claude" \
-  && echo '{"permissions":{"allow":[],"deny":[],"additionalDirectories":[]},"enableAllProjectMcpServers":true,"dangerouslySkipPermissions":true}' > "$HOME/.claude/settings.json"
+# Claude Code: user-level configuration
+COPY --chown=$USERNAME:$USERNAME claude/ $HOME/.claude/
 
 # Shell alias: cc = claude code in YOLO mode
 RUN echo 'alias cc="claude --dangerously-skip-permissions"' >> "$HOME/.bashrc"
