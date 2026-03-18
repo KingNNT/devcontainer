@@ -8,7 +8,9 @@ An isolated development environment powered by Docker with Neovim, Node.js 24 LT
 - **Neovim** (latest) with [custom configuration](https://github.com/KingNNT/neovim-configuration)
 - **Node.js 24 LTS** via nvm
 - **Python 3.12**
+- **Claude Code** CLI (alias `cc` for permissive mode)
 - **Build tools**: git, curl, wget, make, fzf
+- Non-root user `dev` with sudo access
 
 ## Prerequisites
 
@@ -58,13 +60,16 @@ Your machine                    Container
 |---------|-------------|
 | `make build` | Build the Docker image |
 | `make run` | Start the container (mounts `.` to `/app`) |
+| `make run-workspace` | Start the container (mounts `~/Documents/workspaces` to `/app`) |
 | `make exec` | Open a shell in the container |
 | `make stop` | Stop and remove the container |
 
 ## Project Structure
 
 ```
-.docker/ubuntu/Dockerfile       # Container image definition
-.docker/ubuntu/start-container  # Entrypoint script
+.docker/ubuntu/
+├── Dockerfile                  # Container image definition
+├── start-container             # Entrypoint script
+└── claude/                     # Claude Code user-level config
 Makefile                        # All dev commands
 ```

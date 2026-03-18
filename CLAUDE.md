@@ -19,16 +19,19 @@ make stop    # Stop and remove container
 
 ```
 .docker/ubuntu/
-├── Dockerfile          # Full image build (Ubuntu 22.04, Neovim, Python 3.12, nvm)
-└── start-container     # Entrypoint: initializes nvm, installs Node.js 24 LTS
+├── Dockerfile          # Full image build (Ubuntu 22.04, Neovim, Python 3.12, nvm, Node.js, Claude Code)
+├── start-container     # Entrypoint: sources nvm, keeps container alive
+└── claude/             # Claude Code user-level config (CLAUDE.md, settings.json)
 
 Makefile                # All dev commands (docker build/run/exec/stop)
 ```
 
 - Image name: `devcontainer`, container name: `devcontainer`
+- Runs as non-root user `dev` (UID/GID 1000)
 - Projects are volume-mounted to `/app` via `docker run -v .:/app`
 - Neovim config is cloned from `github.com/KingNNT/neovim-configuration` (develop branch) during image build
-- Node.js is installed at container startup (not build time) via nvm in `start-container`
+- Node.js and nvm are installed at build time; `start-container` only sources nvm at runtime
+- Claude Code CLI is installed at build time; alias `cc` runs it in permissive mode
 
 ## Shell Script Conventions
 
