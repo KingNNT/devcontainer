@@ -7,10 +7,10 @@ build:
 WORKSPACE_DIR := ~/Documents/workspaces
 
 run:
-	docker run -d --name $(CONTAINER_NAME) --restart unless-stopped -v .:/app $(IMAGE_NAME)
+	docker run -d --name $(CONTAINER_NAME) --restart unless-stopped --network host -v .:/app $(IMAGE_NAME)
 
 run-workspace:
-	docker run -d --name $(CONTAINER_NAME) --restart unless-stopped -v $(WORKSPACE_DIR):/app $(IMAGE_NAME)
+	docker run -d --name $(CONTAINER_NAME) --restart unless-stopped --network host -v $(WORKSPACE_DIR):/app $(IMAGE_NAME)
 
 exec:
 	docker exec -it $(CONTAINER_NAME) bash
